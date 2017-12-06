@@ -1,0 +1,72 @@
+var net = require('net');
+var 
+var step_motor = '0';
+var sole_motor = '0';
+var ifaces = os.networkInterfaces();
+var ip = 0;
+
+Object.keys(ifaces).forEach(function (ifname) {
+  var alias = 0;
+
+  ifaces[ifname].forEach(function (iface) {
+    if ('IPv4' !== iface.family || iface.internal !== false) {
+      // skip over internal (i.e. 127.0.0.1) and non-ipv4 addresses
+      return;
+    }
+
+    if (alias >= 1) {
+      // this single interface has multiple ipv4 addresses
+    } else {
+      // this interface has only one ipv4 adress
+      if(ifname.substr(0,1)==="e"){
+        console.log(ifname, iface.address);
+        ip = iface.address;
+        }
+    }
+    ++alias;
+  });
+});
+
+        var client = net.connect({port:8107, host:'192.168.0.176'}, function() {
+                console.log('Conn Successed');
+                client.setEncoding('utf8');
+                var serialport = new Serialport('/dev/ttyUSB0');
+                serialport.on('open', function() {
+                        console.log('Serial Port Opened');
+                });
+
+                serialport.on('data', function(data) {
+                        var aaa = data.toString();
+                        console.log(aaa);
+
+                        var acc = JSON.parse(aaa);
+                        dB = acc.dB;
+                        client.write('{\"num\":\"B01\", \"dB\":\"'+dB+'\",\"ip\":\"'+ip+'\"}');
+                }); 
+		this.on('data', function(data) {
+                        var bbb = data.toString();
+                        console.log(bbb);
+
+                        var bcc = JSON.parse(bbb);
+                        do_snack = bcc.do_snack;
+                        do_ball = bcc.do_ball;
+                        if (do_snack == 1) {
+                                step_motor = '1';
+                                serialport.write(step_motor);
+                        }
+                        if (do_ball == 1) {
+                                sole_motor = '2';
+                                serialport.write(sole_motor);
+                        }
+                });
+                this.on('end', function() {
+                        console.log('disconnected');
+                });
+                this.on('close', function() {
+                        console.log('Socket Closed');
+                });
+                this.on('error', function(err) {
+                        console.log('Socket Error : ', JSON.stringify(err));
+                });
+        });
+        return client;
